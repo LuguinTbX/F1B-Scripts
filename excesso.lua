@@ -20,30 +20,30 @@ function Notifier:Show()
 	end
 end
 
-local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim"., 5)
+local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", 5)
 notification:Show()
 
 
 local success, Players = pcall(function() return game:GetService("Players") end)
 if not success or not Players then
-	game:Kick("Falha ao obter Players")
+	error("Falha ao obter Players")
 end
 
 local success2, RunService = pcall(function() return game:GetService("RunService") end)
 if not success2 or not RunService then
-	game:Kick("Falha ao obter RunService")
+	error("Falha ao obter RunService")
 end
 
 local success3, player = pcall(function() return Players.LocalPlayer end)
 if not success3 or not player then
-	game:Kick("Falha ao obter LocalPlayer")
+	error("Falha ao obter LocalPlayer")
 end
 
 local success4, _character = pcall(function()
 	return player.Character or player.CharacterAdded:Wait()
 end)
 if not success4 or not _character then
-	game:Kick("Falha ao obter Character")
+	error("Falha ao obter Character")
 end
 
 local Vehicles = workspace:FindFirstChild("Vehicles")
@@ -95,7 +95,7 @@ local function removePlayerBillboard(targetPlayer)
 	local label = playerBillboards[playerName]
 	if label then
 		local parent = label.Parent
-		if parent and parent:IsA("GuiBase2d") or parent:IsA("BillboardGui") then
+		if parent and (parent:IsA("GuiBase2d") or parent:IsA("BillboardGui")) then
 			parent:Destroy()
 		end
 		playerBillboards[playerName] = nil
@@ -208,7 +208,9 @@ local function cleanupOfflinePlayers()
 	for _, entry in ipairs(keysToRemove) do
 		maxSpeeds[entry.key] = nil
 
-		removePlayerBillboard({ Name = entry.playerName })
+
+		local tempPlayer = { Name = entry.playerName }
+		removePlayerBillboard(tempPlayer)
 	end
 end
 
