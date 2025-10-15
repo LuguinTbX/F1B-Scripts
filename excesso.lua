@@ -20,7 +20,7 @@ function Notifier:Show()
 	end
 end
 
-local notification = Notifier.new("Velo V1", "Script carregado com sucesso \n luni, qualquer bug fala pra mim", 5)
+local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim"., 5)
 notification:Show()
 
 
@@ -128,21 +128,19 @@ local function updateAllPlayersMaxSpeeds()
 	if not Vehicles then return end
 
 	local now = os.clock()
-	if now - lastUpdate < 1 then return end
+	if (now - lastUpdate) < 1 then return end
 	lastUpdate = now
 
-
-	for playerName, _ in pairs(playerBillboards) do
+	for playerName in pairs(playerBillboards) do
 		local playerObj = Players:FindFirstChild(playerName)
 		if playerObj and playerObj.Character then
 			local humanoid = playerObj.Character:FindFirstChildOfClass("Humanoid")
-			if not humanoid or not humanoid.SeatPart then
+			if not (humanoid and humanoid.SeatPart) then
 				removePlayerBillboard(playerObj)
 				clearPlayerMaxSpeeds(playerName)
 			end
 		end
 	end
-
 
 	for _, car in ipairs(Vehicles:GetChildren()) do
 		if not car.Name:match("Car$") then
@@ -167,7 +165,7 @@ local function updateAllPlayersMaxSpeeds()
 		local seatedPlayer = getSeatedPlayerFromHumanoid(occupant)
 		if not seatedPlayer or occupant.SeatPart ~= vehicleSeat then
 			if seatedPlayer then
-				local key = ("Car:%s:%s"):format(car.Name, seatedPlayer.Name)
+				local key = string.format("Car:%s:%s", car.Name, seatedPlayer.Name)
 				maxSpeeds[key] = nil
 				removePlayerBillboard(seatedPlayer)
 			end
@@ -184,12 +182,13 @@ local function updateAllPlayersMaxSpeeds()
 			continue
 		end
 
-		local key = ("Car:%s:%s"):format(car.Name, seatedPlayer.Name)
+		local key = string.format("Car:%s:%s", car.Name, seatedPlayer.Name)
 		maxSpeeds[key] = maxSpeed
 
 		local label = createPlayerBillboard(seatedPlayer)
 		if label then
-			label.Text = string.format("MaxSpeed: %d", maxSpeed)
+			local displayName = seatedPlayer.DisplayName or seatedPlayer.Name
+			label.Text = ("MaxSpeed : %d\nName: %s"):format(maxSpeed, displayName)
 		end
 	end
 end
