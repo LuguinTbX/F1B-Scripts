@@ -20,8 +20,12 @@ function Notifier:Show()
 	end
 end
 
-local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", 5)
+local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", 2)
 notification:Show()
+
+
+local keyNotification = Notifier.new("Controles", "Pressione 'L' para alternar state do rastreio", 2)
+keyNotification:Show()
 
 
 local success, Players = pcall(function() return game:GetService("Players") end)
@@ -32,6 +36,11 @@ end
 local success2, RunService = pcall(function() return game:GetService("RunService") end)
 if not success2 or not RunService then
 	error("Falha ao obter RunService")
+end
+
+local success5, UserInputService = pcall(function() return game:GetService("UserInputService") end)
+if not success5 or not UserInputService then
+	error("Falha ao obter UserInputService")
 end
 
 local success3, player = pcall(function() return Players.LocalPlayer end)
@@ -50,7 +59,8 @@ local Vehicles = workspace:FindFirstChild("Vehicles")
 local maxSpeeds = {}
 local playerBillboards = {}
 local lastUpdate = 0
-
+local billboardsVisible = true
+local TOGGLE_BILLBOARD_KEY = Enum.KeyCode.L
 
 local function getPlayerCharacter(targetPlayer)
 	return targetPlayer.Character or targetPlayer.CharacterAdded:Wait()
@@ -71,6 +81,7 @@ local function createPlayerBillboard(targetPlayer)
 	billboardGui.Adornee = head
 	billboardGui.AlwaysOnTop = true
 	billboardGui.Name = "MaxSpeedDisplay"
+	billboardGui.Enabled = billboardsVisible
 	billboardGui.Parent = head
 
 	local label = Instance.new("TextLabel")
@@ -122,6 +133,19 @@ local function clearPlayerMaxSpeeds(playerName)
 			maxSpeeds[key] = nil
 		end
 	end
+end
+
+local function toggleBillboardsVisibility()
+	billboardsVisible = not billboardsVisible
+
+	for _, label in pairs(playerBillboards) do
+		if label and label.Parent and label.Parent:IsA("BillboardGui") then
+			label.Parent.Enabled = billboardsVisible
+		end
+	end
+
+	local statusMsg = billboardsVisible and "On" or "Off"
+	Notifier.new("Script", ("Status %s"):format(statusMsg), 2):Show()
 end
 
 local function updateAllPlayersMaxSpeeds()
@@ -240,6 +264,17 @@ function _DebugMaxSpeeds()
 	print("========================")
 end
 
+
+
+
+
+local function onBillboardToggleInput(input: InputObject, gameProcessed: boolean)
+	if gameProcessed then return end
+	if input.KeyCode ~= TOGGLE_BILLBOARD_KEY then return end
+	toggleBillboardsVisibility()
+end
+
+UserInputService.InputBegan:Connect(onBillboardToggleInput)
 
 RunService.Heartbeat:Connect(function()
 	updateAllPlayersMaxSpeeds()
