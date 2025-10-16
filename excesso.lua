@@ -188,7 +188,7 @@ local function updateAllPlayersMaxSpeeds()
 		local label = createPlayerBillboard(seatedPlayer)
 		if label then
 			local displayName = seatedPlayer.DisplayName or seatedPlayer.Name
-			label.Text = ("MaxSpeed : %d\nName: %s"):format(maxSpeed, displayName)
+			label.Text = ("MaxSpeed : %.2f\nName: %s"):format(maxSpeed, displayName)
 		end
 	end
 end
@@ -231,7 +231,7 @@ _GetOtherPlayersCarMaxSpeeds = GetOtherPlayersCarMaxSpeeds
 function _DebugMaxSpeeds()
 	print("=== DEBUG MAXSPEEDS ===")
 	for key, maxSpeed in pairs(maxSpeeds) do
-		print(string.format("Key: %s | MaxSpeed: %d", key, maxSpeed))
+		print(string.format("Key: %s | MaxSpeed: %.2f", key, maxSpeed))
 	end
 	print("=== DEBUG PLAYER BILLBOARDS ===")
 	for playerName, _ in pairs(playerBillboards) do
