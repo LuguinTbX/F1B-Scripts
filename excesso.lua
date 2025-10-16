@@ -20,12 +20,15 @@ function Notifier:Show()
 	end
 end
 
-local notification = Notifier.new("Velo V1", "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", 2)
-notification:Show()
+local notificationsToShow = {
+	{title = "Velo V1", text = "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", duration = 2},
+	{title = "Controles", text = "Pressione 'L' para alternar visibilidade do rastreio", duration = 2}
+}
 
-
-local keyNotification = Notifier.new("Controles", "Pressione 'L' para alternar state do rastreio", 2)
-keyNotification:Show()
+for _, notif in ipairs(notificationsToShow) do
+	local notificationInstance = Notifier.new(notif.title, notif.text, notif.duration)
+	notificationInstance:Show()
+end
 
 
 local success, Players = pcall(function() return game:GetService("Players") end)
