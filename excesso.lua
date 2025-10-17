@@ -22,7 +22,7 @@ end
 
 local notificationsToShow = {
 	{title = "Velo V1", text = "Script carregado com sucesso. \n Luni, qualquer bug fala pra mim", duration = 2},
-	{title = "Controles", text = "Pressione 'L' para alternar visibilidade do rastreio", duration = 2}
+	{title = "Controles", text = "Pressione 'L' para alternar visibilidade do rastreio\nPressione 'K' para mostrar log de velocidades", duration = 3}
 }
 
 for _, notif in ipairs(notificationsToShow) do
@@ -101,7 +101,9 @@ local playerBillboards = {}
 local lastUpdate = 0
 local billboardsVisible = true
 local TOGGLE_BILLBOARD_KEY = Enum.KeyCode.L
-local lastSpeedAlert = {} 
+local LOG_KEY = Enum.KeyCode.K
+local lastSpeedAlert = {}
+local speedHistory = {} 
 
 local function createSessionVeloGui()
 	local player = Players.LocalPlayer
@@ -115,38 +117,87 @@ local function createSessionVeloGui()
 	local frame = Instance.new("Frame")
 	frame.Name = "MainFrame"
 	frame.Parent = screenGui
-	frame.BackgroundColor3 = Color3.fromRGB(25, 48, 50)
-	frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	frame.BorderSizePixel = 0
-	frame.Position = UDim2.new(0.72609812, 0, 0.363636374, 0)
-	frame.Size = UDim2.new(0, 318, 0, 174)
+	frame.BackgroundColor3 = Color3.fromRGB(18, 32, 39)
+	frame.BorderColor3 = Color3.fromRGB(42, 99, 132)
+	frame.BorderSizePixel = 2
+	frame.Position = UDim2.new(0.7, 0, 0.35, 0)
+	frame.Size = UDim2.new(0, 340, 0, 196)
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.ClipsDescendants = true
+	frame.BackgroundTransparency = 0.05
+	frame.Active = true
+
+	
+	local topbar = Instance.new("Frame")
+	topbar.Name = "TopBar"
+	topbar.Parent = frame
+	topbar.BackgroundColor3 = Color3.fromRGB(28, 55, 70)
+	topbar.Size = UDim2.new(1, 0, 0, 38)
+	topbar.BorderSizePixel = 0
+
+
 
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Name = "Header"
-	textLabel.Parent = frame
-	textLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	textLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	textLabel.BorderSizePixel = 0
-	textLabel.Position = UDim2.new(0.185534596, 0, 0.0804597735, 0)
-	textLabel.Size = UDim2.new(0, 200, 0, 50)
-	textLabel.Font = Enum.Font.SourceSans
-	textLabel.Text = "Velo da sessão"
-	textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+	textLabel.Parent = topbar
+	textLabel.BackgroundTransparency = 1
+	textLabel.Position = UDim2.new(0, 45, 0, 0)
+	textLabel.Size = UDim2.new(1, -45, 1, 0)
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.Text = "VELOCIDADE DA SESSÃO"
+	textLabel.TextColor3 = Color3.fromRGB(199, 235, 255)
 	textLabel.TextScaled = true
-	textLabel.TextSize = 14
+	textLabel.TextStrokeTransparency = 0.7
+
+	
+	local inputBg = Instance.new("Frame")
+	inputBg.Parent = frame
+	inputBg.Name = "InputBackground"
+	inputBg.BackgroundColor3 = Color3.fromRGB(42, 99, 132)
+	inputBg.Position = UDim2.new(0.08, 0, 0.31, 0)
+	inputBg.Size = UDim2.new(0.84, 0, 0.52, 0)
+	inputBg.BackgroundTransparency = 0.2
+	inputBg.BorderSizePixel = 0
+	inputBg.ClipsDescendants = true
+	inputBg.AnchorPoint = Vector2.new(0, 0)
+	inputBg.ZIndex = 2
 
 	local textBox = Instance.new("TextBox")
 	textBox.Name = "SpeedInput"
-	textBox.Parent = frame
+	textBox.Parent = inputBg
 	textBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	textBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	textBox.TextTransparency = 0
 	textBox.BorderSizePixel = 0
-	textBox.Position = UDim2.new(0.183958814, 0, 0.512733817, 0)
-	textBox.Size = UDim2.new(0, 200, 0, 50)
-	textBox.Font = Enum.Font.SourceSans
+	textBox.Position = UDim2.new(0.03, 0, 0.2, 0)
+	textBox.Size = UDim2.new(0.94, 0, 0.6, 0)
+	textBox.Font = Enum.Font.Gotham
 	textBox.Text = ""
-	textBox.TextColor3 = Color3.fromRGB(0, 0, 0)
-	textBox.TextSize = 14
+	textBox.TextColor3 = Color3.fromRGB(13, 36, 53)
+	textBox.PlaceholderText = ""
+	textBox.PlaceholderColor3 = Color3.fromRGB(170, 210, 227)
+	textBox.TextSize = 26
+	textBox.ClearTextOnFocus = false
+	textBox.ZIndex = 3
+
+	
+	local underline = Instance.new("Frame")
+	underline.Parent = textBox
+	underline.BackgroundColor3 = Color3.fromRGB(42, 99, 132)
+	underline.BorderSizePixel = 0
+	underline.Position = UDim2.new(0, 0, 1, -4)
+	underline.Size = UDim2.new(1, 0, 0, 4)
+	underline.ZIndex = 3
+
+	
+	local shadow = Instance.new("ImageLabel")
+	shadow.Name = "Shadow"
+	shadow.Parent = frame
+	shadow.BackgroundTransparency = 1
+	shadow.Position = UDim2.new(0, -8, 0, -8)
+	shadow.Size = UDim2.new(1, 16, 1, 16)
+	shadow.ZIndex = 0
+	shadow.Image = "rbxassetid://1316045217"
+	shadow.ImageTransparency = 0.85
 
 	return {
 		ScreenGui = screenGui,
@@ -158,6 +209,93 @@ end
 
 local guiElements = createSessionVeloGui()
 makeFrameDraggable(guiElements.Frame)
+
+
+local historyGui = nil
+
+local function createHistoryGui()
+	if historyGui then
+		historyGui:Destroy()
+	end
+	
+	local player = Players.LocalPlayer
+	local playerGui = player:WaitForChild("PlayerGui")
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "SpeedHistoryGui"
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.Parent = playerGui
+
+	local frame = Instance.new("Frame")
+	frame.Name = "HistoryFrame"
+	frame.Parent = screenGui
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	frame.BorderColor3 = Color3.fromRGB(100, 100, 100)
+	frame.BorderSizePixel = 2
+	frame.Position = UDim2.new(0.1, 0, 0.1, 0)
+	frame.Size = UDim2.new(0, 500, 0, 400)
+
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Parent = frame
+	titleLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	titleLabel.BorderSizePixel = 0
+	titleLabel.Position = UDim2.new(0, 0, 0, 0)
+	titleLabel.Size = UDim2.new(1, 0, 0, 30)
+	titleLabel.Font = Enum.Font.SourceSansBold
+	titleLabel.Text = "📋 HISTÓRICO DE VELOCIDADES - F1B"
+	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	titleLabel.TextScaled = true
+
+	
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "CloseButton"
+	closeButton.Parent = frame
+	closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	closeButton.BorderSizePixel = 0
+	closeButton.Position = UDim2.new(1, -30, 0, 5)
+	closeButton.Size = UDim2.new(0, 25, 0, 20)
+	closeButton.Font = Enum.Font.SourceSansBold
+	closeButton.Text = "X"
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.TextScaled = true
+
+	
+	local scrollingFrame = Instance.new("ScrollingFrame")
+	scrollingFrame.Name = "HistoryScroll"
+	scrollingFrame.Parent = frame
+	scrollingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	scrollingFrame.BorderSizePixel = 0
+	scrollingFrame.Position = UDim2.new(0, 5, 0, 35)
+	scrollingFrame.Size = UDim2.new(1, -10, 1, -40)
+	scrollingFrame.ScrollBarThickness = 8
+	scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+	
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Parent = scrollingFrame
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Padding = UDim.new(0, 2)
+
+	historyGui = {
+		ScreenGui = screenGui,
+		Frame = frame,
+		ScrollingFrame = scrollingFrame,
+		CloseButton = closeButton
+	}
+
+	
+	makeFrameDraggable(frame)
+
+	
+	closeButton.MouseButton1Click:Connect(function()
+		screenGui:Destroy()
+		historyGui = nil
+	end)
+
+	return historyGui
+end
 
 local function getPlayerCharacter(targetPlayer)
 	return targetPlayer.Character or targetPlayer.CharacterAdded:Wait()
@@ -232,14 +370,31 @@ local function clearPlayerMaxSpeeds(playerName)
 	end
 end
 
-local function checkSpeedLimit(playerName, maxSpeed)
+local function addToSpeedHistory(playerName, maxSpeed)
+	local now = os.time()
+	local timeStr = os.date("%H:%M:%S", now)
+	
+	
+	table.insert(speedHistory, {
+		playerName = playerName,
+		maxSpeed = maxSpeed,
+		timestamp = timeStr,
+		time = now
+	})
+	
+	
+	if #speedHistory > 100 then
+		table.remove(speedHistory, 1)
+	end
+end
 
+local function checkSpeedLimit(playerName, maxSpeed)
 	local speedInputText = guiElements.TextBox.Text
 	if speedInputText == "" or speedInputText == nil then
 		return
 	end
 	
-	-- Converter para número decimal
+	
 	local speedLimit = tonumber(speedInputText)
 	if not speedLimit then
 		return 
@@ -264,6 +419,65 @@ local function checkSpeedLimit(playerName, maxSpeed)
 			notification:Show()
 		end
 	end
+end
+
+local function updateHistoryGui()
+	if not historyGui or not historyGui.ScreenGui.Enabled then
+		return
+	end
+	
+	
+	for _, child in ipairs(historyGui.ScrollingFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+	
+	if #speedHistory == 0 then
+		
+		local noDataLabel = Instance.new("TextLabel")
+		noDataLabel.Parent = historyGui.ScrollingFrame
+		noDataLabel.BackgroundTransparency = 1
+		noDataLabel.Size = UDim2.new(1, 0, 0, 20)
+		noDataLabel.Font = Enum.Font.SourceSans
+		noDataLabel.Text = "Nenhuma velocidade registrada ainda."
+		noDataLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+		noDataLabel.TextScaled = true
+	else
+		
+		for i, entry in ipairs(speedHistory) do
+			local playerObj = Players:FindFirstChild(entry.playerName)
+			local displayName = playerObj and (playerObj.DisplayName or entry.playerName) or entry.playerName
+			
+			local entryLabel = Instance.new("TextLabel")
+			entryLabel.Parent = historyGui.ScrollingFrame
+			entryLabel.BackgroundColor3 = i % 2 == 0 and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(30, 30, 30)
+			entryLabel.BorderSizePixel = 0
+			entryLabel.Size = UDim2.new(1, 0, 0, 25)
+			entryLabel.Font = Enum.Font.SourceSans
+			entryLabel.Text = string.format("  [%s] %s: %.2f", 
+				entry.timestamp, displayName, entry.maxSpeed)
+			entryLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+			entryLabel.TextXAlignment = Enum.TextXAlignment.Left
+			entryLabel.TextScaled = true
+		end
+		
+		
+		historyGui.ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, #speedHistory * 27)
+	end
+end
+
+local function showSpeedLog()
+	
+	if not historyGui then
+		createHistoryGui()
+	end
+	
+	
+	updateHistoryGui()
+	
+	
+	historyGui.ScreenGui.Enabled = true
 end
 
 local function toggleBillboardsVisibility()
@@ -338,7 +552,13 @@ local function updateAllPlayersMaxSpeeds()
 		end
 
 		local key = string.format("Car:%s:%s", car.Name, seatedPlayer.Name)
+		local previousSpeed = maxSpeeds[key]
 		maxSpeeds[key] = maxSpeed
+
+		
+		if not previousSpeed or previousSpeed ~= maxSpeed then
+			addToSpeedHistory(seatedPlayer.Name, maxSpeed)
+		end
 
 		local label = createPlayerBillboard(seatedPlayer)
 		if label then
@@ -402,17 +622,22 @@ end
 
 
 
-local function onBillboardToggleInput(input: InputObject, gameProcessed: boolean)
+local function onInput(input: InputObject, gameProcessed: boolean)
 	if gameProcessed then return end
-	if input.KeyCode ~= TOGGLE_BILLBOARD_KEY then return end
-	toggleBillboardsVisibility()
+	
+	if input.KeyCode == TOGGLE_BILLBOARD_KEY then
+		toggleBillboardsVisibility()
+	elseif input.KeyCode == LOG_KEY then
+		showSpeedLog()
+	end
 end
 
-UserInputService.InputBegan:Connect(onBillboardToggleInput)
+UserInputService.InputBegan:Connect(onInput)
 
 RunService.Heartbeat:Connect(function()
 	updateAllPlayersMaxSpeeds()
 	cleanupOfflinePlayers()
+	updateHistoryGui() 
 end)
 
 Players.PlayerAdded:Connect(function(newPlayer)
@@ -424,7 +649,6 @@ Players.PlayerRemoving:Connect(function(leavingPlayer)
 
 	removePlayerBillboard(leavingPlayer)
 
-	-- Limpar alertas do player que saiu
 	lastSpeedAlert[leavingPlayer.Name] = nil
 
 	local keysToRemove = {}
