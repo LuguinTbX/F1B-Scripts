@@ -58,12 +58,106 @@ if not success4 or not _character then
 	error("Falha ao obter Character")
 end
 
+local function makeFrameDraggable(frame)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            frame.Position = UDim2.new(
+                framePos.X.Scale,
+                framePos.X.Offset + delta.X,
+                framePos.Y.Scale,
+                framePos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
 local Vehicles = workspace:FindFirstChild("Vehicles")
 local maxSpeeds = {}
 local playerBillboards = {}
 local lastUpdate = 0
 local billboardsVisible = true
 local TOGGLE_BILLBOARD_KEY = Enum.KeyCode.L
+local lastSpeedAlert = {} 
+
+local function createSessionVeloGui()
+	local player = Players.LocalPlayer
+	local playerGui = player:WaitForChild("PlayerGui")
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "SessionVeloGui"
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.Parent = playerGui
+
+	local frame = Instance.new("Frame")
+	frame.Name = "MainFrame"
+	frame.Parent = screenGui
+	frame.BackgroundColor3 = Color3.fromRGB(25, 48, 50)
+	frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	frame.BorderSizePixel = 0
+	frame.Position = UDim2.new(0.72609812, 0, 0.363636374, 0)
+	frame.Size = UDim2.new(0, 318, 0, 174)
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Name = "Header"
+	textLabel.Parent = frame
+	textLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	textLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	textLabel.BorderSizePixel = 0
+	textLabel.Position = UDim2.new(0.185534596, 0, 0.0804597735, 0)
+	textLabel.Size = UDim2.new(0, 200, 0, 50)
+	textLabel.Font = Enum.Font.SourceSans
+	textLabel.Text = "Velo da sessão"
+	textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+	textLabel.TextScaled = true
+	textLabel.TextSize = 14
+
+	local textBox = Instance.new("TextBox")
+	textBox.Name = "SpeedInput"
+	textBox.Parent = frame
+	textBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	textBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	textBox.BorderSizePixel = 0
+	textBox.Position = UDim2.new(0.183958814, 0, 0.512733817, 0)
+	textBox.Size = UDim2.new(0, 200, 0, 50)
+	textBox.Font = Enum.Font.SourceSans
+	textBox.Text = ""
+	textBox.TextColor3 = Color3.fromRGB(0, 0, 0)
+	textBox.TextSize = 14
+
+	return {
+		ScreenGui = screenGui,
+		Frame = frame,
+		TextBox = textBox,
+		TextLabel = textLabel
+	}
+end
+
+local guiElements = createSessionVeloGui()
+makeFrameDraggable(guiElements.Frame)
 
 local function getPlayerCharacter(targetPlayer)
 	return targetPlayer.Character or targetPlayer.CharacterAdded:Wait()
@@ -134,6 +228,40 @@ local function clearPlayerMaxSpeeds(playerName)
 		local nameFromKey = key:match("Car:.+:(.+)")
 		if nameFromKey == playerName then
 			maxSpeeds[key] = nil
+		end
+	end
+end
+
+local function checkSpeedLimit(playerName, maxSpeed)
+
+	local speedInputText = guiElements.TextBox.Text
+	if speedInputText == "" or speedInputText == nil then
+		return
+	end
+	
+	-- Converter para número decimal
+	local speedLimit = tonumber(speedInputText)
+	if not speedLimit then
+		return 
+	end
+	
+	
+	if maxSpeed > speedLimit then
+	
+		local now = os.clock()
+		local lastAlert = lastSpeedAlert[playerName] or 0
+		
+		if (now - lastAlert) > 1 then 
+			lastSpeedAlert[playerName] = now
+			
+			
+			local notification = Notifier.new(
+				"⚠️ ALERTA DE VELOCIDADE",
+				string.format("Player %s ultrapassou o limite!\nVelocidade: %.2f (Limite: %.2f)", 
+					playerName, maxSpeed, speedLimit),
+				4
+			)
+			notification:Show()
 		end
 	end
 end
@@ -217,6 +345,9 @@ local function updateAllPlayersMaxSpeeds()
 			local displayName = seatedPlayer.DisplayName or seatedPlayer.Name
 			label.Text = ("MaxSpeed : %.2f\nName: %s"):format(maxSpeed, displayName)
 		end
+		
+		
+		checkSpeedLimit(seatedPlayer.Name, maxSpeed)
 	end
 end
 
@@ -293,6 +424,8 @@ Players.PlayerRemoving:Connect(function(leavingPlayer)
 
 	removePlayerBillboard(leavingPlayer)
 
+	-- Limpar alertas do player que saiu
+	lastSpeedAlert[leavingPlayer.Name] = nil
 
 	local keysToRemove = {}
 
