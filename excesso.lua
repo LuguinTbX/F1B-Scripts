@@ -30,7 +30,6 @@ for _, notif in ipairs(notificationsToShow) do
 	notificationInstance:Show()
 end
 
-
 local success, Players = pcall(function() return game:GetService("Players") end)
 if not success or not Players then
 	error("Falha ao obter Players")
@@ -303,6 +302,7 @@ end
 
 
 local function createPlayerBillboard(targetPlayer)
+	
 	if playerBillboards[targetPlayer.Name] then
 		return playerBillboards[targetPlayer.Name]
 	end
@@ -315,7 +315,7 @@ local function createPlayerBillboard(targetPlayer)
 	billboardGui.StudsOffset = Vector3.new(0, 3, 0)
 	billboardGui.Adornee = head
 	billboardGui.AlwaysOnTop = true
-	billboardGui.Name = "MaxSpeedDisplay"
+	billboardGui.Name = "MaxSpeedDisplay_" .. targetPlayer.Name  -- Nome único por jogador
 	billboardGui.Enabled = billboardsVisible
 	billboardGui.Parent = head
 
@@ -353,9 +353,16 @@ local function getSeatedPlayerFromHumanoid(humanoid)
 	if not humanoid then return nil end
 	local character = humanoid.Parent
 	if not character then return nil end
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player.Character == character then
-			return player
+	
+	
+	if player.Character == character then
+		return player
+	end
+	
+	
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= player and otherPlayer.Character == character then
+			return otherPlayer
 		end
 	end
 	return nil
@@ -540,6 +547,11 @@ local function updateAllPlayersMaxSpeeds()
 			end
 			continue
 		end
+		
+		
+		if not seatedPlayer.Name or seatedPlayer.Name == "" then
+			continue
+		end
 
 		local maxSpeedObj = vehicleSeat:FindFirstChild("MaxSpeed")
 		if not (maxSpeedObj and maxSpeedObj:IsA("NumberValue")) then
@@ -556,14 +568,21 @@ local function updateAllPlayersMaxSpeeds()
 		maxSpeeds[key] = maxSpeed
 
 		
+		
 		if not previousSpeed or previousSpeed ~= maxSpeed then
+			
+			print(string.format("[DEBUG] Atualizando %s: %.2f (anterior: %s)", 
+				seatedPlayer.Name, maxSpeed, previousSpeed and tostring(previousSpeed) or "nil"))
+			
+			
 			addToSpeedHistory(seatedPlayer.Name, maxSpeed)
-		end
-
-		local label = createPlayerBillboard(seatedPlayer)
-		if label then
-			local displayName = seatedPlayer.DisplayName or seatedPlayer.Name
-			label.Text = ("MaxSpeed : %.2f\nName: %s"):format(maxSpeed, displayName)
+			
+			
+			local label = createPlayerBillboard(seatedPlayer)
+			if label then
+				local displayName = seatedPlayer.DisplayName or seatedPlayer.Name
+				label.Text = ("MaxSpeed : %.2f\nName: %s"):format(maxSpeed, displayName)
+			end
 		end
 		
 		
@@ -622,13 +641,27 @@ end
 
 
 
+
 local function onInput(input: InputObject, gameProcessed: boolean)
+	
 	if gameProcessed then return end
 	
-	if input.KeyCode == TOGGLE_BILLBOARD_KEY then
-		toggleBillboardsVisibility()
-	elseif input.KeyCode == LOG_KEY then
-		showSpeedLog()
+	
+	if not input or not input.KeyCode then return end
+	
+	
+	local keyCode = input.KeyCode
+	local success, error = pcall(function()
+		if keyCode == TOGGLE_BILLBOARD_KEY then
+			toggleBillboardsVisibility()
+		elseif keyCode == LOG_KEY then
+			showSpeedLog()
+		end
+	end)
+	
+
+	if not success then
+		warn("[onInput] Erro ao processar input:", error)
 	end
 end
 
@@ -646,23 +679,18 @@ Players.PlayerAdded:Connect(function(newPlayer)
 end)
 
 Players.PlayerRemoving:Connect(function(leavingPlayer)
-
 	removePlayerBillboard(leavingPlayer)
 
 	lastSpeedAlert[leavingPlayer.Name] = nil
 
-	local keysToRemove = {}
-
-
+	local keysToPurge = {}
 	for key in pairs(maxSpeeds) do
-		local playerName = key:match("^Car:.-:(.+)$")
-		if playerName == leavingPlayer.Name then
-			table.insert(keysToRemove, key)
+		local extractedName = key:match("^Car:.-:(.+)$")
+		if extractedName == leavingPlayer.Name then
+			table.insert(keysToPurge, key)
 		end
 	end
-
-
-	for _, key in ipairs(keysToRemove) do
+	for _, key in ipairs(keysToPurge) do
 		maxSpeeds[key] = nil
 	end
 end)
